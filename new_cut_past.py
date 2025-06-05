@@ -162,6 +162,76 @@
 
 
 
+# import sys
+# from pathlib import Path
+# import shutil
+
+# # Step 1: Get paths and last folder number from user input
+# try:
+#     # Prompt for source path
+#     source_input = input("Enter the source directory path (e.g., C:/Users/HP/Documents/zmine/parttime/ghostfacerepo/projectrepo/datasets/New folder/old): ")
+#     new_data_path = Path(source_input.strip())  # Strip whitespace
+#     # Prompt for destination path
+#     dest_input = input("Enter the destination directory path (e.g., C:/Users/HP/Documents/zmine/parttime/ghostfacerepo/projectrepo/datasets/faces_umd/hybrid): ")
+#     dataset_path = Path(dest_input.strip())  # Strip whitespace
+#     # Prompt for last folder number
+#     last_folder = int(input("Enter the last folder number (e.g., 21): "))
+#     start_folder = last_folder + 1  # Start from next number (e.g., 22)
+# except ValueError:
+#     print("Error: Please enter a valid numeric last folder number.")
+#     sys.exit(1)
+
+# # Step 2: Verify paths exist
+# if not new_data_path.exists():
+#     print(f"Error: Source path {new_data_path} not found.")
+#     sys.exit(1)
+# if not new_data_path.is_dir():
+#     print(f"Error: Source path {new_data_path} is not a directory.")
+#     sys.exit(1)
+# if not dataset_path.exists():
+#     print(f"Error: Destination path {dataset_path} not found.")
+#     sys.exit(1)
+# if not dataset_path.is_dir():
+#     print(f"Error: Destination path {dataset_path} is not a directory.")
+#     sys.exit(1)
+
+# # Step 3: Get list of new data folders
+# try:
+#     new_data_folders = [f for f in new_data_path.iterdir() if f.is_dir() and f.name.isdigit()]
+#     if not new_data_folders:
+#         print(f"No numeric folders found in {new_data_path}.")
+#         sys.exit(1)
+#     new_data_folders.sort(key=lambda x: int(x.name))  # Optional: sort if order matters
+# except FileNotFoundError:
+#     print(f"Error: Source path {new_data_path} not found during folder listing.")
+#     sys.exit(1)
+
+# # Step 4: Move folders with progress updates
+# moved_count = 0
+# for i, folder in enumerate(new_data_folders, start=start_folder):
+#     new_folder_name = str(i)  # New name (e.g., 22, 23, ...)
+#     destination_folder = dataset_path / new_folder_name
+#     if destination_folder.exists():
+#         print(f"Skipping folder {new_folder_name}: already exists")
+#         continue
+#     print(f"Attempting to move folder {folder.name} to {new_folder_name}")
+#     try:
+#         shutil.move(str(folder), str(destination_folder))
+#         moved_count += 1
+#         print(f"Moved folder {folder.name} to {new_folder_name} ({moved_count}/{len(new_data_folders)})")
+#     except (shutil.Error, OSError) as e:
+#         print(f"Error moving folder {folder.name} to {new_folder_name}: {e}")
+#         continue
+
+# # Calculate the last folder number
+# last_moved_folder = start_folder + moved_count - 1 if moved_count > 0 else start_folder
+
+# # Step 5: Print completion message with start and last folder numbers
+# print(f"Completed: Moved {moved_count} new folders from {start_folder} to {last_moved_folder}")
+
+
+
+
 import sys
 from pathlib import Path
 import shutil
@@ -195,36 +265,38 @@ if not dataset_path.is_dir():
     print(f"Error: Destination path {dataset_path} is not a directory.")
     sys.exit(1)
 
-# Step 3: Get list of new data folders
-try:
-    new_data_folders = [f for f in new_data_path.iterdir() if f.is_dir() and f.name.isdigit()]
-    if not new_data_folders:
-        print(f"No numeric folders found in {new_data_path}.")
-        sys.exit(1)
-    new_data_folders.sort(key=lambda x: int(x.name))  # Optional: sort if order matters
-except FileNotFoundError:
-    print(f"Error: Source path {new_data_path} not found during folder listing.")
-    sys.exit(1)
-
-# Step 4: Move folders with progress updates
+# Step 3: Move folders with progress updates, processing one at a time
 moved_count = 0
-for i, folder in enumerate(new_data_folders, start=start_folder):
-    new_folder_name = str(i)  # New name (e.g., 22, 23, ...)
+i = start_folder
+found_folders = False
+for folder in new_data_path.iterdir():
+    if not folder.is_dir() or not folder.name.isdigit():
+        continue
+    found_folders = True
+    new_folder_name = str(i)  # New name (e.g., 62, 63, ...)
     destination_folder = dataset_path / new_folder_name
     if destination_folder.exists():
         print(f"Skipping folder {new_folder_name}: already exists")
+        i += 1
         continue
     print(f"Attempting to move folder {folder.name} to {new_folder_name}")
     try:
         shutil.move(str(folder), str(destination_folder))
         moved_count += 1
-        print(f"Moved folder {folder.name} to {new_folder_name} ({moved_count}/{len(new_data_folders)})")
+        print(f"Moved folder {folder.name} to {new_folder_name}")
+        i += 1
     except (shutil.Error, OSError) as e:
         print(f"Error moving folder {folder.name} to {new_folder_name}: {e}")
+        i += 1
         continue
+
+# Check if any numeric folders were found
+if not found_folders:
+    print(f"No numeric folders found in {new_data_path}.")
+    sys.exit(1)
 
 # Calculate the last folder number
 last_moved_folder = start_folder + moved_count - 1 if moved_count > 0 else start_folder
 
-# Step 5: Print completion message with start and last folder numbers
+# Step 4: Print completion message with start and last folder numbers
 print(f"Completed: Moved {moved_count} new folders from {start_folder} to {last_moved_folder}")
