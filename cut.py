@@ -24,28 +24,29 @@ moved_count = 0
 start_time = time.time()
 
 while True:
-    # Find the lowest numeric folder in source
-    numeric_folders = [f for f in source_path.iterdir() if f.is_dir() and f.name.isdigit()]
-    if not numeric_folders:
-        break  # No folders left to move
+    try:
+        # Use iterator to avoid scanning the full directory
+        folder_iter = source_path.iterdir()
+        for folder in folder_iter:
+            if folder.is_dir() and folder.name.isdigit():
+                new_name = str(next_folder_num)
+                dest_folder = dest_path / new_name
 
-    # Pick folder with smallest numeric name
-    folder_to_move = min(numeric_folders, key=lambda f: int(f.name))
-    new_name = str(next_folder_num)
-    dest_folder = dest_path / new_name
+                current_time = datetime.now().strftime("%H:%M:%S")
+                elapsed = time.time() - start_time
 
-    current_time = datetime.now().strftime("%H:%M:%S")
-    elapsed = time.time() - start_time
+                try:
+                    shutil.move(str(folder), str(dest_folder))
+                    print(f"[{current_time} | +{elapsed:.2f}s] Moved folder {folder.name} to {new_name}")
+                    moved_count += 1
+                    next_folder_num += 1
+                except Exception as e:
+                    print(f"[{current_time} | +{elapsed:.2f}s] Error moving {folder.name}: {e}")
+                break  # Move one folder only, then restart fresh
+        else:
+            # No valid folders found, exit
+            break
+    except StopIteration:
+        break
 
-    if dest_folder.exists():
-        print(f"[{current_time} | +{elapsed:.2f}s] Skipping folder {new_name}: already exists")
-    else:
-        try:
-            shutil.move(str(folder_to_move), str(dest_folder))
-            moved_count += 1
-            print(f"[{current_time} | +{elapsed:.2f}s] Moved folder {folder_to_move.name} to {new_name}")
-            next_folder_num += 1
-        except Exception as e:
-            print(f"[{current_time} | +{elapsed:.2f}s] Error moving folder {folder_to_move.name}: {e}")
-
-print(f"Completed: Moved {moved_count} folders from {last_folder + 1} to {next_folder_num - 1}")
+print(f"✅ Completed: Moved {moved_count} folders from {last_folder + 1} to {next_folder_num - 1}")
